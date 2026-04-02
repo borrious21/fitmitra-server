@@ -1,7 +1,8 @@
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
-   "https://fitmitra-fyp.netlify.app",
+  "https://fitmitra-fyp.netlify.app",
+  "https://fitmitra-client-ev2g.vercel.app",
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
 ];
 
