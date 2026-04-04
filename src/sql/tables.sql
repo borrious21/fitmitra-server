@@ -295,6 +295,99 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE TABLE wellness_categories (
+    id          SERIAL PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    icon        VARCHAR(50),
+    color       VARCHAR(20),
+    is_active   BOOLEAN DEFAULT TRUE,
+    created_at  TIMESTAMP DEFAULT NOW(),
+    updated_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE wellness_exercises (
+    id               SERIAL PRIMARY KEY,
+    category_id      INT REFERENCES wellness_categories(id) ON DELETE SET NULL,
+    title            VARCHAR(150) NOT NULL,
+    description      TEXT NOT NULL,
+    instructions     TEXT NOT NULL,
+    technique_type   VARCHAR(50),
+    duration_seconds INT DEFAULT 300,
+    difficulty       VARCHAR(20) DEFAULT 'beginner'
+                         CHECK (difficulty IN ('beginner', 'intermediate', 'advanced')),
+    benefits         JSONB DEFAULT '[]',
+    tags             JSONB DEFAULT '[]',
+    xp_reward        INT DEFAULT 25,
+    is_active        BOOLEAN DEFAULT TRUE,
+    created_by       INT REFERENCES users(id) ON DELETE SET NULL,
+    created_at       TIMESTAMP DEFAULT NOW(),
+    updated_at       TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_wellness_exercises_category ON wellness_exercises(category_id);
+CREATE INDEX idx_wellness_exercises_active   ON wellness_exercises(is_active);
+
+CREATE TABLE wellness_sessions (
+    id               SERIAL PRIMARY KEY,
+    user_id          INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exercise_id      INT REFERENCES wellness_exercises(id) ON DELETE SET NULL,
+    exercise_title   VARCHAR(150),
+    duration_seconds INT NOT NULL CHECK (duration_seconds > 0),
+    completed        BOOLEAN DEFAULT TRUE,
+    mood_before      INT CHECK (mood_before BETWEEN 1 AND 10),
+    mood_after       INT CHECK (mood_after  BETWEEN 1 AND 10),
+    notes            TEXT,
+    session_date     DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at       TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_wellness_sessions_user_date ON wellness_sessions(user_id, session_date DESC);
+CREATE INDEX idx_wellness_sessions_exercise  ON wellness_sessions(exercise_id);
+
+CREATE TABLE mood_logs (
+    id           SERIAL PRIMARY KEY,
+    user_id      INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mood_score   INT NOT NULL CHECK (mood_score BETWEEN 1 AND 10),
+    mood_label   VARCHAR(50),
+    energy_level INT CHECK (energy_level BETWEEN 1 AND 10),
+    notes        TEXT,
+    log_date     DATE NOT NULL DEFAULT CURRENT_DATE,
+    logged_at    TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, log_date)
+);
+CREATE INDEX idx_mood_logs_user_date ON mood_logs(user_id, log_date DESC);
+
+CREATE TABLE stress_logs (
+    id               SERIAL PRIMARY KEY,
+    user_id          INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    stress_level     INT NOT NULL CHECK (stress_level BETWEEN 1 AND 10),
+    trigger_category VARCHAR(50),
+    trigger_notes    TEXT,
+    coping_method    VARCHAR(100),
+    log_date         DATE NOT NULL DEFAULT CURRENT_DATE,
+    logged_at        TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_stress_logs_user_date ON stress_logs(user_id, log_date DESC);
+
+CREATE TABLE gratitude_journal (
+    id         SERIAL PRIMARY KEY,
+    user_id    INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entry      TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_gratitude_journal_user ON gratitude_journal(user_id, created_at DESC);
+
+CREATE TRIGGER trg_wellness_categories_updated_at
+    BEFORE UPDATE ON wellness_categories FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_wellness_exercises_updated_at
+    BEFORE UPDATE ON wellness_exercises FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_gratitude_journal_updated_at
+    BEFORE UPDATE ON gratitude_journal FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INT DEFAULT 0;
+
 CREATE TRIGGER trg_users_updated_at              BEFORE UPDATE ON users              FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_profiles_updated_at           BEFORE UPDATE ON profiles           FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_plans_updated_at              BEFORE UPDATE ON plans              FOR EACH ROW EXECUTE FUNCTION set_updated_at();
