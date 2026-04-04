@@ -1,9 +1,6 @@
-// routes/wellness.routes.js
-
-const express = require('express');
-const router = express.Router();
-const { authenticateToken } = require('../middleware/authMiddleware');
-const {
+import express from "express";
+import authenticateToken from "../middlewares/auth.middleware.js";
+import {
   getExercises,
   getExerciseById,
   getCategories,
@@ -21,7 +18,9 @@ const {
   updateJournalEntry,
   deleteJournalEntry,
   getWellnessSummary
-} = require('../controllers/wellnessController');
+} from "../controllers/User/wellness.controller.js";
+
+const router = express.Router();
 
 router.use(authenticateToken);
 
@@ -49,4 +48,4 @@ router.post('/journal', addJournalEntry);
 router.put('/journal/:id', updateJournalEntry);
 router.delete('/journal/:id', deleteJournalEntry);
 
-module.exports = router;
+export default router;

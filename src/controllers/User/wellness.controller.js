@@ -1,6 +1,6 @@
 // controllers/User/wellness.controller.js
 
-const pool = require('../db');
+import pool from '../../config/db.config.js';
 
 const getExercises = async (req, res) => {
   try {
@@ -511,7 +511,7 @@ const getWellnessSummary = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getExercises,
   getExerciseById,
   getCategories,
