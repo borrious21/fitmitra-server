@@ -11,6 +11,16 @@ import AdminPlansController        from "../controllers/Admin/admin.plan.control
 import AdminLogsController         from "../controllers/Admin/admin.log.controller.js";
 import AdminAnalyticsController    from "../controllers/Admin/admin.analytic.controller.js";
 import AdminNotificationsController from "../controllers/Admin/admin.notification.controller.js";
+import {
+  getWellnessOverview,
+  getWellnessMoodTrend,
+  getWellnessMoodDistribution,
+  getWellnessTopExercises,
+  getWellnessStressTriggers,
+  getWellnessCategoryBreakdown,
+  getWellnessAtRisk,
+  getWellnessRecentJournal,
+} from "../controllers/Admin/admin.wellness.controller.js";
 
 const router = Router();
 
@@ -58,9 +68,18 @@ router.get("/analytics/retention",   AdminAnalyticsController.getRetentionStats)
 router.get("/analytics/at-risk",     AdminAnalyticsController.getAtRiskUsers);
 router.get("/analytics/top-users",   AdminAnalyticsController.getTopActiveUsers);
 
+router.get("/wellness/overview",            getWellnessOverview);
+router.get("/wellness/mood-trend",          getWellnessMoodTrend);
+router.get("/wellness/mood-distribution",   getWellnessMoodDistribution);
+router.get("/wellness/top-exercises",       getWellnessTopExercises);
+router.get("/wellness/stress-triggers",     getWellnessStressTriggers);
+router.get("/wellness/category-breakdown",  getWellnessCategoryBreakdown);
+router.get("/wellness/at-risk",             getWellnessAtRisk);
+router.get("/wellness/recent-journal",      getWellnessRecentJournal);
+
 router.get("/notifications",              AdminNotificationsController.getNotifications);
 router.post("/notifications/send",        AdminNotificationsController.sendNotification);
 router.post("/notifications/broadcast",   AdminNotificationsController.broadcastNotification);
 router.delete("/notifications/:id",       AdminNotificationsController.deleteNotification);
 
-export default router;
+export default router;

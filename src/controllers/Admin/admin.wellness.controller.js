@@ -1,6 +1,6 @@
-// controllers/Admin/admin.wellness.controller.js
+// controllsers/Admin/admin.wellness.controller.js
 
-const pool = require('../db');
+import pool from '../../config/db.config.js';
 
 const getAllCategories = async (req, res) => {
   try {
@@ -446,7 +446,189 @@ const getUserWellnessEngagement = async (req, res) => {
   }
 };
 
-module.exports = {
+const getWellnessOverview = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+
+    const [moodToday, mood7d, stress7d, sessions, journal, streak] = await Promise.all([
+      pool.query(`SELECT COUNT(*)::int AS count FROM mood_logs WHERE log_date = $1`, [today]),
+      pool.query(`SELECT ROUND(AVG(mood_score), 1) AS avg FROM mood_logs WHERE log_date >= CURRENT_DATE - 7`),
+      pool.query(`SELECT ROUND(AVG(stress_level), 1) AS avg FROM stress_logs WHERE log_date >= CURRENT_DATE - 7`),
+      pool.query(`SELECT COUNT(*)::int AS count, COALESCE(SUM(duration_seconds)/60, 0)::int AS minutes
+                  FROM wellness_sessions WHERE session_date = $1 AND completed = TRUE`, [today]),
+      pool.query(`SELECT COUNT(*)::int AS count FROM gratitude_journal
+                  WHERE created_at >= NOW() - INTERVAL '24 hours'`),
+      pool.query(`SELECT ROUND(AVG(streak), 1) AS avg FROM (
+                    SELECT user_id, COUNT(DISTINCT session_date)::int AS streak
+                    FROM wellness_sessions
+                    WHERE session_date >= CURRENT_DATE - 30 AND completed = TRUE
+                    GROUP BY user_id
+                  ) s`),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        mood_logs_today:       moodToday.rows[0].count,
+        avg_mood_7d:           mood7d.rows[0].avg,
+        avg_stress_7d:         stress7d.rows[0].avg,
+        sessions_today:        sessions.rows[0].count,
+        total_minutes_today:   sessions.rows[0].minutes,
+        journal_entries_today: journal.rows[0].count,
+        avg_streak_days:       streak.rows[0].avg,
+      },
+    });
+  } catch (err) {
+    console.error("getWellnessOverview error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessMoodTrend = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        log_date::text                              AS day,
+        ROUND(AVG(mood_score), 1)                  AS avg_mood,
+        ROUND(AVG(energy_level), 1)                AS avg_stress,
+        COUNT(*)::int                              AS total_logs,
+        COUNT(CASE WHEN mood_score < 4 THEN 1 END)::int AS low_mood_count
+      FROM mood_logs
+      WHERE log_date >= CURRENT_DATE - 14
+      GROUP BY log_date
+      ORDER BY log_date ASC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("getWellnessMoodTrend error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessMoodDistribution = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COUNT(CASE WHEN mood_score BETWEEN 1 AND 3 THEN 1 END)::int AS very_low,
+        COUNT(CASE WHEN mood_score BETWEEN 4 AND 5 THEN 1 END)::int AS low,
+        COUNT(CASE WHEN mood_score BETWEEN 6 AND 7 THEN 1 END)::int AS moderate,
+        COUNT(CASE WHEN mood_score BETWEEN 8 AND 9 THEN 1 END)::int AS high,
+        COUNT(CASE WHEN mood_score = 10             THEN 1 END)::int AS excellent
+      FROM mood_logs
+      WHERE log_date >= CURRENT_DATE - 30
+    `);
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error("getWellnessMoodDistribution error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessTopExercises = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COALESCE(ws.exercise_title, we.title, 'Unknown') AS exercise_name,
+        COUNT(ws.id)::int                                 AS session_count,
+        COUNT(DISTINCT ws.user_id)::int                   AS unique_users
+      FROM wellness_sessions ws
+      LEFT JOIN wellness_exercises we ON we.id = ws.exercise_id
+      WHERE ws.session_date >= CURRENT_DATE - 30
+      GROUP BY COALESCE(ws.exercise_title, we.title, 'Unknown')
+      ORDER BY session_count DESC
+      LIMIT 10
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("getWellnessTopExercises error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessStressTriggers = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        trigger_category,
+        COUNT(*)::int                    AS count,
+        ROUND(AVG(stress_level), 1)      AS avg_stress
+      FROM stress_logs
+      WHERE log_date >= CURRENT_DATE - 30
+        AND trigger_category IS NOT NULL
+      GROUP BY trigger_category
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("getWellnessStressTriggers error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessCategoryBreakdown = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        wc.name   AS category_name,
+        wc.icon   AS category_icon,
+        COUNT(ws.id)::int AS session_count
+      FROM wellness_sessions ws
+      JOIN wellness_exercises we ON we.id = ws.exercise_id
+      JOIN wellness_categories wc ON wc.id = we.category_id
+      WHERE ws.session_date >= CURRENT_DATE - 30
+      GROUP BY wc.id, wc.name, wc.icon
+      ORDER BY session_count DESC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("getWellnessCategoryBreakdown error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessAtRisk = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        u.id, u.name, u.email,
+        ROUND(AVG(ml.mood_score), 1)   AS avg_mood,
+        ROUND(AVG(sl.stress_level), 1) AS avg_stress
+      FROM users u
+      LEFT JOIN mood_logs ml
+        ON ml.user_id = u.id AND ml.log_date >= CURRENT_DATE - 7
+      LEFT JOIN stress_logs sl
+        ON sl.user_id = u.id AND sl.log_date >= CURRENT_DATE - 7
+      WHERE u.role = 'user'
+      GROUP BY u.id, u.name, u.email
+      HAVING AVG(ml.mood_score) < 4 OR AVG(sl.stress_level) > 7
+      ORDER BY AVG(ml.mood_score) ASC NULLS LAST
+      LIMIT 20
+    `);
+    res.json({ success: true, data: { users: result.rows } });
+  } catch (err) {
+    console.error("getWellnessAtRisk error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const getWellnessRecentJournal = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT gj.id, gj.entry, gj.created_at, u.name AS user_name
+      FROM gratitude_journal gj
+      JOIN users u ON u.id = gj.user_id
+      ORDER BY gj.created_at DESC
+      LIMIT 5
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("getWellnessRecentJournal error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export {
   getAllCategories,
   createCategory,
   updateCategory,
@@ -458,5 +640,13 @@ module.exports = {
   getUserSessions,
   getUserMoodHistory,
   getWellnessAnalytics,
-  getUserWellnessEngagement
+  getUserWellnessEngagement,
+  getWellnessOverview,
+  getWellnessMoodTrend,
+  getWellnessMoodDistribution,
+  getWellnessTopExercises,
+  getWellnessStressTriggers,
+  getWellnessCategoryBreakdown,
+  getWellnessAtRisk,
+  getWellnessRecentJournal,
 };
