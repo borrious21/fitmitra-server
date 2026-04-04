@@ -63,4 +63,4 @@ router.post("/notifications/send",        AdminNotificationsController.sendNotif
 router.post("/notifications/broadcast",   AdminNotificationsController.broadcastNotification);
 router.delete("/notifications/:id",       AdminNotificationsController.deleteNotification);
 
-export default router;
+export default router;
