@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
 import UserModel from "../models/user.model.js";
-// import ProfileModel from "../models/profile.model.js";
+import ProfileModel from "../models/profile.model.js";
 import AuthError from "../errors/auth.error.js";
 import {
   jwtSecret,

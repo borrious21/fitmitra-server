@@ -1,5 +1,5 @@
 // src/services/Email.service.js
-import transporter, { MAIL_FROM } from "../config/mailer.config.js";
+import { resend, MAIL_FROM, MAIL_REPLY_TO } from "../config/mailer.config.js";
 
 const OTP_EXPIRY_MINUTES = 10;
 
@@ -13,7 +13,6 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
   <title>${title}</title>
 </head>
 <body style="margin:0;padding:0;background:#F0F0EC;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <!-- Preheader (hidden preview text) -->
   <span style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</span>
 
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
@@ -29,10 +28,8 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
               <table cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td style="padding-right:8px;vertical-align:middle;">
-                    <!-- Pulse icon SVG -->
                     <img src="https://res.cloudinary.com/dir5oumz5/image/upload/v1775306228/download_1_zzed97.jpg"
-                         width="28" height="28"
-                         alt=""
+                         width="28" height="28" alt=""
                          style="display:block;border-radius:6px;object-fit:cover;"
                          onerror="this.style.display='none'" />
                   </td>
@@ -56,7 +53,6 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
                        box-shadow:0 8px 40px rgba(45,106,79,0.10),0 2px 8px rgba(0,0,0,0.04);
                        overflow:hidden;">
 
-              <!-- Green accent bar top -->
               <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td style="height:4px;
@@ -65,7 +61,6 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
                 </tr>
               </table>
 
-              <!-- Card body -->
               <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td style="padding:36px 40px 32px;">
@@ -74,7 +69,6 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
                 </tr>
               </table>
 
-              <!-- Divider -->
               <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td style="padding:0 40px;">
@@ -83,7 +77,6 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
                 </tr>
               </table>
 
-              <!-- Footer inside card -->
               <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td style="padding:20px 40px 28px;">
@@ -103,7 +96,6 @@ function buildEmailHtml({ title, preheader, bodyHtml }) {
             </td>
           </tr>
 
-          <!-- Bottom spacing -->
           <tr><td style="height:32px;"></td></tr>
 
         </table>
@@ -138,20 +130,17 @@ function otpBlock(otp) {
     .join("");
 
   return `
-    <!-- OTP label -->
     <p style="margin:0 0 14px;font-size:11px;font-weight:700;
                letter-spacing:0.12em;text-transform:uppercase;
                color:#2D6A4F;text-align:center;">
       Your one-time code
     </p>
 
-    <!-- Digit boxes -->
     <table cellpadding="0" cellspacing="0" role="presentation"
            style="margin:0 auto 20px;">
       <tr>${digitCells}</tr>
     </table>
 
-    <!-- Expiry pill -->
     <table cellpadding="0" cellspacing="0" role="presentation"
            style="margin:0 auto 8px;">
       <tr>
@@ -191,7 +180,6 @@ function tipBox(text) {
 
 export async function sendVerificationOtp(to, otp) {
   const bodyHtml = `
-    <!-- Icon circle -->
     <table cellpadding="0" cellspacing="0" role="presentation"
            style="margin:0 auto 24px;">
       <tr>
@@ -206,7 +194,6 @@ export async function sendVerificationOtp(to, otp) {
       </tr>
     </table>
 
-    <!-- Heading -->
     <h1 style="margin:0 0 10px;
                font-size:24px;font-weight:700;
                font-family:Georgia,'Times New Roman',serif;
@@ -215,7 +202,6 @@ export async function sendVerificationOtp(to, otp) {
       Verify Your Email
     </h1>
 
-    <!-- Sub -->
     <p style="margin:0 0 28px;font-size:14.5px;color:#444444;
                line-height:1.75;text-align:center;max-width:400px;
                margin-left:auto;margin-right:auto;">
@@ -232,8 +218,9 @@ export async function sendVerificationOtp(to, otp) {
       without verification.
     `)}`;
 
-  await transporter.sendMail({
+  const { error } = await resend.emails.send({
     from: MAIL_FROM,
+    reply_to: MAIL_REPLY_TO,
     to,
     subject: `${otp} – Verify your FitMitra account`,
     html: buildEmailHtml({
@@ -242,11 +229,14 @@ export async function sendVerificationOtp(to, otp) {
       bodyHtml,
     }),
   });
+
+  if (error) {
+    throw new Error(`Failed to send verification email: ${error.message}`);
+  }
 }
 
 export async function sendPasswordResetOtp(to, otp) {
   const bodyHtml = `
-    <!-- Icon circle -->
     <table cellpadding="0" cellspacing="0" role="presentation"
            style="margin:0 auto 24px;">
       <tr>
@@ -261,7 +251,6 @@ export async function sendPasswordResetOtp(to, otp) {
       </tr>
     </table>
 
-    <!-- Heading -->
     <h1 style="margin:0 0 10px;
                font-size:24px;font-weight:700;
                font-family:Georgia,'Times New Roman',serif;
@@ -270,7 +259,6 @@ export async function sendPasswordResetOtp(to, otp) {
       Reset Your Password
     </h1>
 
-    <!-- Sub -->
     <p style="margin:0 0 28px;font-size:14.5px;color:#444444;
                line-height:1.75;text-align:center;max-width:400px;
                margin-left:auto;margin-right:auto;">
@@ -287,8 +275,9 @@ export async function sendPasswordResetOtp(to, otp) {
       this code will expire automatically.
     `)}`;
 
-  await transporter.sendMail({
+  const { error } = await resend.emails.send({
     from: MAIL_FROM,
+    reply_to: MAIL_REPLY_TO,
     to,
     subject: `${otp} – FitMitra password reset code`,
     html: buildEmailHtml({
@@ -297,4 +286,8 @@ export async function sendPasswordResetOtp(to, otp) {
       bodyHtml,
     }),
   });
+
+  if (error) {
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
 }
