@@ -172,12 +172,13 @@ class AuthController {
   }
 
   static async logout(req, res, next) {
-    try {
-      await AuthService.logout(req.user.id);
-      return response(res, 200, true, "Logged out successfully");
-    } catch (error) {
-      next(error);
-    }
+  try {
+    const { refreshToken } = req.body || {};
+    await AuthService.logout(refreshToken);
+    return response(res, 200, true, "Logged out successfully");
+  } catch (error) {
+    next(error);
+  }
   }
 }
 

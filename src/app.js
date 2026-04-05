@@ -1,4 +1,3 @@
-
 // src/app.js
 import 'dotenv/config';
 import express from "express";
@@ -9,7 +8,6 @@ import morgan from "morgan";
 import corsOptions from "./config/cors.config.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 
-// Routes
 import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.route.js";
 import workoutRoutes from "./routes/workout.routes.js";
@@ -37,7 +35,6 @@ if (process.env.NODE_ENV !== "production") {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "API is running" });
 });
@@ -54,21 +51,12 @@ app.use("/api/ai", aiCoachRoutes);
 app.use("/api/meal-planner", mealPlannerRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/wellness", wellnessRoutes)
+app.use("/api/wellness", wellnessRoutes);
 
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   error.statusCode = 404;
   next(error);
-});
-
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://fitmitra-fyp.netlify.app");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
 });
 
 app.use(errorMiddleware);
