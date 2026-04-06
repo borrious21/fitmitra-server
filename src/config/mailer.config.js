@@ -1,13 +1,19 @@
-// mailer.config.js
-import { Resend } from "resend";
+// src/config/mailer.config.js
+import nodemailer from "nodemailer";
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error("Missing RESEND_API_KEY in environment variables");
+if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  throw new Error("Missing SMTP_HOST, SMTP_USER, or SMTP_PASS in environment variables");
 }
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+export const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || "465"),
+  secure: process.env.SMTP_SECURE !== "false", 
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-// The "from" address must be a verified domain in your Resend account.
-// While testing you can use the Resend sandbox address: onboarding@resend.dev
 export const MAIL_FROM =
-  process.env.RESEND_FROM || "FitMitra <onboarding@resend.dev>";
+  process.env.MAIL_FROM || `FitMitra <${process.env.SMTP_USER}>`;
