@@ -1,21 +1,13 @@
 // mailer.config.js
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-  throw new Error(
-    "Missing GMAIL_USER or GMAIL_APP_PASSWORD in environment variables"
-  );
+if (!process.env.RESEND_API_KEY) {
+  throw new Error("Missing RESEND_API_KEY in environment variables");
 }
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+export const resend = new Resend(process.env.RESEND_API_KEY);
 
+// The "from" address must be a verified domain in your Resend account.
+// While testing you can use the Resend sandbox address: onboarding@resend.dev
 export const MAIL_FROM =
-  process.env.GMAIL_FROM || `FitMitra <${process.env.GMAIL_USER}>`;
-
-export default transporter;
+  process.env.RESEND_FROM || "FitMitra <onboarding@resend.dev>";

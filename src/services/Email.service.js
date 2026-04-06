@@ -1,5 +1,5 @@
 // src/services/Email.service.js
-import transporter, { MAIL_FROM } from "../config/mailer.config.js";
+import { resend, MAIL_FROM } from "../config/mailer.config.js";
 
 const OTP_EXPIRY_MINUTES = 10;
 
@@ -127,7 +127,7 @@ export async function sendVerificationOtp(to, otp) {
     </p>
     ${otpBlock(otp)}`;
 
-  await transporter.sendMail({
+  const { error } = await resend.emails.send({
     from: MAIL_FROM,
     to,
     subject: `${otp} is your FitMitra verification code`,
@@ -137,6 +137,7 @@ export async function sendVerificationOtp(to, otp) {
       bodyHtml,
     }),
   });
+  if (error) throw new Error(`Failed to send verification email: ${error.message}`);
 }
 
 export async function sendPasswordResetOtp(to, otp) {
@@ -155,7 +156,7 @@ export async function sendPasswordResetOtp(to, otp) {
       If you did not request a password reset, no action is required.
     </p>`;
 
-  await transporter.sendMail({
+  const { error } = await resend.emails.send({
     from: MAIL_FROM,
     to,
     subject: `${otp} is your FitMitra password reset code`,
@@ -165,4 +166,5 @@ export async function sendPasswordResetOtp(to, otp) {
       bodyHtml,
     }),
   });
+  if (error) throw new Error(`Failed to send password reset email: ${error.message}`);
 }
