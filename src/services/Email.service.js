@@ -1,3 +1,4 @@
+// Email.service.js
 import { client, MAIL_FROM } from "../config/mailer.config.js";
 
 const OTP_EXPIRY_MINUTES = 10;
