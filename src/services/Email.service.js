@@ -114,13 +114,12 @@ function otpBlock(otp) {
 }
 
 async function sendMail({ to, subject, title, preheader, bodyHtml }) {
-  const email = new SibApiV3Sdk.SendSmtpEmail();
-  email.sender = MAIL_FROM;
-  email.to = [{ email: to }];
-  email.subject = subject;
-  email.htmlContent = buildEmailHtml({ title, preheader, bodyHtml });
-
-  await client.sendTransacEmail(email);
+  await client.transactionalEmails.sendTransacEmail({
+    sender: MAIL_FROM,
+    to: [{ email: to }],
+    subject,
+    htmlContent: buildEmailHtml({ title, preheader, bodyHtml }),
+  });
 }
 
 // 1. Email verification OTP
