@@ -127,16 +127,20 @@ export async function sendVerificationOtp(to, otp) {
     </p>
     ${otpBlock(otp)}`;
 
-  await transporter.sendMail({
-    from: MAIL_FROM,
-    to,
-    subject: `${otp} is your FitMitra verification code`,
-    html: buildEmailHtml({
-      title: "Verify your email – FitMitra",
-      preheader: `Your verification code is ${otp}. Expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-      bodyHtml,
-    }),
-  });
+   try {
+    await transporter.sendMail({
+      from: MAIL_FROM,
+      to,
+      subject: `${otp} is your FitMitra verification code`,
+      html: buildEmailHtml({
+        title: "Verify your email – FitMitra",
+        preheader: `Your verification code is ${otp}. Expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+        bodyHtml,
+      }),
+    });
+  } catch (err) {
+    console.log("Verification email failed:", err.message);
+  }
 }
 
 //2. Password reset OTP 
@@ -156,14 +160,18 @@ export async function sendPasswordResetOtp(to, otp) {
       If you did not request a password reset, no action is required.
     </p>`;
 
-  await transporter.sendMail({
-    from: MAIL_FROM,
-    to,
-    subject: `${otp} is your FitMitra password reset code`,
-    html: buildEmailHtml({
-      title: "Reset your password – FitMitra",
-      preheader: `Your password reset code is ${otp}. Expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-      bodyHtml,
-    }),
-  });
+   try {
+    await transporter.sendMail({
+      from: MAIL_FROM,
+      to,
+      subject: `${otp} is your FitMitra password reset code`,
+      html: buildEmailHtml({
+        title: "Reset your password – FitMitra",
+        preheader: `Your password reset code is ${otp}. Expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+        bodyHtml,
+      }),
+    });
+  } catch (err) {
+    console.log("Reset email failed:", err.message);
+  }
 }
