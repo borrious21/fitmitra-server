@@ -1,26 +1,17 @@
 // src/config/mailer.config.js
-import nodemailer from "nodemailer";
 
-if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-  throw new Error("Missing SMTP_HOST, SMTP_USER, or SMTP_PASS in environment variables");
+import * as Brevo from "@getbrevo/brevo";
+
+if (!process.env.BREVO_API_KEY) {
+  throw new Error("Missing BREVO_API_KEY in environment variables");
 }
 
-export const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || "465"),
-  secure: process.env.SMTP_SECURE !== "false",
+const client = new Brevo.TransactionalEmailsApi();
+client.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
-  family: 4, 
+export { client };
 
-  connectionTimeout: 10000,  
-  greetingTimeout: 10000,   
-  socketTimeout: 10000,     
-
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-export const MAIL_FROM =
-  process.env.MAIL_FROM || `FitMitra <${process.env.SMTP_USER}>`;
+export const MAIL_FROM = {
+  email: process.env.MAIL_FROM_EMAIL || "no-reply@yourdomain.com",
+  name: process.env.MAIL_FROM_NAME || "FitMitra",
+};

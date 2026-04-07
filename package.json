@@ -16,6 +16,7 @@
     "nodemon": "^3.1.11"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^5.0.3",
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
@@ -31,7 +32,6 @@
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^2.2.1",
     "node-fetch": "^3.3.2",
-    "nodemailer": "^8.0.4",
     "openai": "^6.29.0",
     "pg": "^8.18.0",
     "zod": "^4.3.6"
