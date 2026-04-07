@@ -1,4 +1,3 @@
-import * as Brevo from "@getbrevo/brevo";
 import { client, MAIL_FROM } from "../config/mailer.config.js";
 
 const OTP_EXPIRY_MINUTES = 10;
@@ -114,7 +113,7 @@ function otpBlock(otp) {
 }
 
 async function sendMail({ to, subject, title, preheader, bodyHtml }) {
-  const email = new Brevo.SendSmtpEmail();
+  const email = new SibApiV3Sdk.SendSmtpEmail();
   email.sender = MAIL_FROM;
   email.to = [{ email: to }];
   email.subject = subject;
