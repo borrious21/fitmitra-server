@@ -153,6 +153,7 @@ class AuthService {
         role: user.role,
         hasCompletedOnboarding: user.has_completed_onboarding ?? false,
         isVerified: user.is_verified ?? false,
+        avatar_url: user.avatar_url ?? null,
       },
     };
   }

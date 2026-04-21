@@ -43,7 +43,7 @@ class AuthController {
 
   static async getMe(req, res, next) {
     try {
-      const { id, name, email, role, has_completed_onboarding, is_verified } = req.user;
+      const { id, name, email, role, has_completed_onboarding, is_verified, avatar_url } = req.user;
       return response(res, 200, true, "User profile retrieved", {
         id,
         name,
@@ -51,6 +51,7 @@ class AuthController {
         role,
         hasCompletedOnboarding: has_completed_onboarding ?? false,
         isVerified: is_verified ?? false,
+        avatar_url: avatar_url ?? null,
       });
     } catch (error) {
       next(error);

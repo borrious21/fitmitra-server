@@ -20,14 +20,16 @@ class UserModel {
   static async findByEmail(email) {
     const query = `
       SELECT
-        id, name, email, password_hash, role,
-        is_verified, is_active, has_completed_onboarding,
-        refresh_token,
-        email_otp, email_otp_expires, email_otp_attempts,
-        reset_otp, reset_otp_expires, reset_otp_attempts,
-        created_at, updated_at
-      FROM users
-      WHERE email = $1;
+        u.id, u.name, u.email, u.password_hash, u.role,
+        u.is_verified, u.is_active, u.has_completed_onboarding,
+        u.refresh_token,
+        u.email_otp, u.email_otp_expires, u.email_otp_attempts,
+        u.reset_otp, u.reset_otp_expires, u.reset_otp_attempts,
+        u.created_at, u.updated_at,
+        up.avatar_url
+      FROM users u
+      LEFT JOIN user_preferences up ON u.id = up.user_id
+      WHERE u.email = $1;
     `;
     const result = await pool.query(query, [email]);
     return result.rows[0];
@@ -36,14 +38,16 @@ class UserModel {
   static async findById(id) {
     const query = `
       SELECT
-        id, name, email, role,
-        is_verified, is_active, has_completed_onboarding,
-        refresh_token,
-        email_otp, email_otp_expires, email_otp_attempts,
-        reset_otp, reset_otp_expires, reset_otp_attempts,
-        created_at, updated_at
-      FROM users
-      WHERE id = $1;
+        u.id, u.name, u.email, u.role,
+        u.is_verified, u.is_active, u.has_completed_onboarding,
+        u.refresh_token,
+        u.email_otp, u.email_otp_expires, u.email_otp_attempts,
+        u.reset_otp, u.reset_otp_expires, u.reset_otp_attempts,
+        u.created_at, u.updated_at,
+        up.avatar_url
+      FROM users u
+      LEFT JOIN user_preferences up ON u.id = up.user_id
+      WHERE u.id = $1;
     `;
     const result = await pool.query(query, [id]);
     return result.rows[0];

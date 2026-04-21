@@ -1,4 +1,4 @@
-// src/controllers/dashboard.controller.js
+// src/controllers/User/dashboard.controller.js
 import pool from "../../config/db.config.js";
 import ProfileModel from "../../models/profile.model.js";
 import WorkoutService from "../../services/workout.service.js";
@@ -129,8 +129,6 @@ class DashboardController {
     }
   }
 
-  // ── FIXED: now selects blood_pressure_systolic, blood_pressure_diastolic,
-  //           blood_pressure, and heart_rate from DB instead of hardcoding them ──
   static async getHealth(req, res, next) {
     try {
       const { rows } = await pool.query(
@@ -155,32 +153,80 @@ class DashboardController {
 
       const log = rows[0];
 
-      // Build BP string: prefer numeric columns, fall back to string column
       const bpSys = log.blood_pressure_systolic  != null ? Number(log.blood_pressure_systolic)  : null;
       const bpDia = log.blood_pressure_diastolic != null ? Number(log.blood_pressure_diastolic) : null;
       const bp    = bpSys && bpDia
         ? `${bpSys}/${bpDia}`
         : (log.blood_pressure ?? null);
 
-      const heartRate = log.heart_rate != null ? Number(log.heart_rate) : null;
-      const sleep     = log.sleep_hours != null ? Number(log.sleep_hours) : null;
+      const heartRate = log.heart_rate   != null ? Number(log.heart_rate)   : null;
+      const sleep     = log.sleep_hours  != null ? Number(log.sleep_hours)  : null;
       const recovery  = log.energy_level != null ? Number(log.energy_level) * 10 : null;
 
       return res.json({
         success: true,
         data: {
           sleep,
-          sleepStatus:     DashboardController._sleepStatus(sleep),
+          sleepStatus:    DashboardController._sleepStatus(sleep),
           heartRate,
-          hrStatus:        DashboardController._heartRateStatus(heartRate),
+          hrStatus:       DashboardController._heartRateStatus(heartRate),
           bp,
-          bpStatus:        DashboardController._bpStatus(bpSys),
-          bpSystolic:      bpSys,
-          bpDiastolic:     bpDia,
+          bpStatus:       DashboardController._bpStatus(bpSys),
+          bpSystolic:     bpSys,
+          bpDiastolic:    bpDia,
           recovery,
-          recoveryStatus:  DashboardController._energyStatus(log.energy_level),
+          recoveryStatus: DashboardController._energyStatus(log.energy_level),
         },
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getWeeklyProgress(req, res, next) {
+    try {
+      const userId = req.user.id;
+
+      const { rows } = await pool.query(
+        `
+        WITH date_series AS (
+          SELECT generate_series(
+            CURRENT_DATE - INTERVAL '6 days',
+            CURRENT_DATE,
+            INTERVAL '1 day'
+          )::DATE AS day
+        ),
+        diet_by_day AS (
+          SELECT
+            log_date,
+            SUM(calories_consumed) AS total_diet_kcal
+          FROM meal_logs
+          WHERE user_id = $1
+            AND log_date >= CURRENT_DATE - INTERVAL '6 days'
+          GROUP BY log_date
+        ),
+        workout_by_day AS (
+          SELECT
+            workout_date,
+            COALESCE(SUM(duration_minutes), 0) AS total_workout_mins
+          FROM workout_logs
+          WHERE user_id = $1
+            AND workout_date >= CURRENT_DATE - INTERVAL '6 days'
+          GROUP BY workout_date
+        )
+        SELECT
+          TO_CHAR(ds.day, 'Dy')                        AS name,
+          COALESCE(d.total_diet_kcal,    0)::INT       AS diet,
+          COALESCE(w.total_workout_mins, 0)::INT       AS workout
+        FROM date_series ds
+        LEFT JOIN diet_by_day    d ON d.log_date     = ds.day
+        LEFT JOIN workout_by_day w ON w.workout_date = ds.day
+        ORDER BY ds.day ASC
+        `,
+        [userId]
+      );
+
+      return res.json({ success: true, weekly: rows });
     } catch (err) {
       next(err);
     }

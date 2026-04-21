@@ -5,8 +5,32 @@ import { withMetrics } from "../metrics/profile.metrics.js";
 
 class ProfileModel {
   static async findByUserId(userId) {
+    // Surface the most recent weight from EITHER weight_logs OR progress_logs
+    // so both the Progress page and the Profile/Dashboard always agree.
+    // Falls back to profiles.weight_kg when neither table has an entry yet.
     const { rows } = await pool.query(
-      "SELECT * FROM profiles WHERE user_id = $1 LIMIT 1",
+      `SELECT
+         p.*,
+         COALESCE(
+           (
+             SELECT weight_kg
+             FROM (
+               SELECT weight_kg, logged_date AS d
+               FROM   weight_logs
+               WHERE  user_id = $1 AND weight_kg IS NOT NULL
+               UNION ALL
+               SELECT weight_kg, log_date AS d
+               FROM   progress_logs
+               WHERE  user_id = $1 AND weight_kg IS NOT NULL
+             ) combined
+             ORDER  BY d DESC
+             LIMIT  1
+           ),
+           p.weight_kg
+         ) AS weight_kg
+       FROM profiles p
+       WHERE p.user_id = $1
+       LIMIT 1`,
       [userId]
     );
     return rows[0] ? withMetrics(rows[0]) : null;

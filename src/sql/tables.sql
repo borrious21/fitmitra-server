@@ -388,6 +388,25 @@ CREATE TRIGGER trg_gratitude_journal_updated_at
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INT DEFAULT 0;
 
+CREATE OR REPLACE FUNCTION sync_profile_weight() RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE profiles
+  SET weight_kg = NEW.weight_kg, updated_at = NOW()
+  WHERE user_id = NEW.user_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_weight_logs_sync_profile
+  AFTER INSERT OR UPDATE ON weight_logs
+  FOR EACH ROW EXECUTE FUNCTION sync_profile_weight();
+
+CREATE TRIGGER trg_progress_logs_sync_profile
+  AFTER INSERT OR UPDATE ON progress_logs
+  FOR EACH ROW
+  WHEN (NEW.weight_kg IS NOT NULL)
+  EXECUTE FUNCTION sync_profile_weight();
+
 CREATE TRIGGER trg_users_updated_at              BEFORE UPDATE ON users              FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_profiles_updated_at           BEFORE UPDATE ON profiles           FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_plans_updated_at              BEFORE UPDATE ON plans              FOR EACH ROW EXECUTE FUNCTION set_updated_at();
